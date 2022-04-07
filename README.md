@@ -1,2 +1,2 @@
 # marketwatch-api-py
-Marketwatch game API
+A python API for the Marketwatch portfolio simulations. 
