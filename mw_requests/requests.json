@@ -1,0 +1,183 @@
+{
+    "userRequests": {
+        "csrf": {
+            "url": "https://accounts.marketwatch.com/login?target=https://www.marketwatch.com/"
+        },
+        "login": {
+            "url": "https://sso.accounts.dowjones.com/usernamepassword/login",
+            "method": "POST",
+            "headers": {
+                "authority": "sso.accounts.dowjones.com",
+                "pragma": "no-cache",
+                "cache-control": "no-cache",
+                "sec-ch-ua": "\" Not;A Brand\";v=\"99\", \"Google Chrome\";v=\"97\", \"Chromium\";v=\"97\"",
+                "auth0-client": "eyJuYW1lIjoiYXV0aDAuanMtdWxwIiwidmVyc2lvbiI6IjkuMTEuMyJ9",
+                "content-type": "application/json",
+                "sec-ch-ua-mobile": "?0",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
+                "sec-ch-ua-platform": "Windows",
+                "accept": "*/*",
+                "origin": "https://sso.accounts.dowjones.com",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "accept-language": "en-US,en;q=0.9"
+            },
+            "required_headers": [
+                "x-remote-user"
+            ],
+            "payload": {
+                "connection": "DJldap",
+                "redirect_uri": "https://accounts.marketwatch.com/auth/sso/login",
+                "tenant": "sso"
+            },
+            "required_payload": [
+                "protocol",
+                "scope",
+                "response_type",
+                "nonce",
+                "ui_locales",
+                "ns",
+                "_csrf",
+                "state",
+                "client_id",
+                "username",
+                "password",
+                "headers"
+            ]
+        },
+        "callback": {
+            "url": "https://sso.accounts.dowjones.com/login/callback",
+            "method": "POST",
+            "headers": {
+                "authority": "sso.accounts.dowjones.com",
+                "pragma": "no-cache",
+                "cache-control": "no-cache",
+                "sec-ch-ua": "\" Not;A Brand\";v=\"99\", \"Google Chrome\";v=\"97\", \"Chromium\";v=\"97\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "Windows",
+                "upgrade-insecure-requests": "1",
+                "origin": "null",
+                "content-type": "application/x-www-form-urlencoded",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
+                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "navigate",
+                "sec-fetch-user": "?1",
+                "sec-fetch-dest": "document",
+                "accept-language": "en-US,en;q=0.9"
+            },
+            "required_payload": [
+                "wa",
+                "wresult",
+                "wctx"
+            ],
+            "form_encoded": true
+        },
+        "search": {
+            "url": "https://api.wsj.net/api/autocomplete/search",
+            "headers": {
+                "Connection": "keep-alive",
+                "Pragma": "no-cache",
+                "Cache-Control": "no-cache",
+                "sec-ch-ua": "\" Not;A Brand\";v=\"99\", \"Google Chrome\";v=\"97\", \"Chromium\";v=\"97\"",
+                "Accept": "application/json",
+                "sec-ch-ua-mobile": "?0",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
+                "sec-ch-ua-platform": "\"Windows\"",
+                "Origin": "https://www.marketwatch.com",
+                "Sec-Fetch-Site": "cross-site",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Dest": "empty",
+                "Accept-Language": "en-US,en;q=0.9"
+            },
+            "required_headers": ["referer"],
+            "query": {
+                "need": "symbol",
+                "excludeExs": "xmstar",
+                "maxRows": 12,
+                "it": "stock,exchangetradedfund,fund",
+                "cc": "us",
+                "entitlementToken": "cecc4267a0194af89ca343805a3e57af"
+            },
+            "required_query": ["q"]
+        },
+        "quoteByDialect": {
+            "url": "https://api.wsj.net/api/dylan/quotes/v2/comp/quoteByDialect",
+            "headers": {
+                "Host": "api.wsj.net",
+                "Connection": "keep-alive",
+                "Pragma": "no-cache",
+                "Cache-Control": "no-cache",
+                "sec-ch-ua": "\" Not;A Brand\";v=\"99\", \"Google Chrome\";v=\"97\", \"Chromium\";v=\"97\"",
+                "sec-ch-ua-mobile": "?0",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
+                "sec-ch-ua-platform": "\"Windows\"",
+                "Accept": "*/*",
+                "Origin": "https://www.marketwatch.com",
+                "Sec-Fetch-Site": "cross-site",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Dest": "empty",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-US,en;q=0.9"
+            },
+            "required_headres": ["referer"],
+            "query": {
+                "dialect": "charting",
+                "needed": "CompositeTrading|BluegrassChannels",
+                "MaxInstrumentMatches": "1",
+                "accept": "application/json",
+                "EntitlementToken": "cecc4267a0194af89ca343805a3e57af",
+                "ckey": "cecc4267a0",
+                "dialects": "charting,djid"
+            },
+            "required_query": ["id"]
+        },
+        "transaction": {
+            "url": "https://www.marketwatch.com/game/mw-api-test/trade/submitorder",
+            "method": "POST",
+            "headers": {
+                "authority": "www.marketwatch.com",
+                "pragma": "no-cache",
+                "cache-control": "no-cache",
+                "sec-ch-ua": "\" Not;A Brand\";v=\"99\", \"Google Chrome\";v=\"97\", \"Chromium\";v=\"97\"",
+                "tracestate": "1022681@nr=0-1-1684273-754897601-88109cc62a3bd555----1643995008006",
+                "traceparent": "00-bd4161539336ee0bb531da1a7f3f1c20-88109cc62a3bd555-01",
+                "sec-ch-ua-mobile": "?0",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36",
+                "newrelic": "eyJ2IjpbMCwxXSwiZCI6eyJ0eSI6IkJyb3dzZXIiLCJhYyI6IjE2ODQyNzMiLCJhcCI6Ijc1NDg5NzYwMSIsImlkIjoiMTk1YThiMDU0Nzg1MjAzZSIsInRyIjoiMTI2MjY2NGJkZmJjOTcxMTI5Nzg5ZGM0NWQ4Y2MxMzAiLCJ0aSI6MTY0MzQwMDgyMDg3OSwidGsiOiIxMDIyNjgxIn19",
+                "content-type": "application/json",
+                "accept": "application/json",
+                "sec-ch-ua-platform": "Windows",
+                "origin": "https://www.marketwatch.com",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "accept-language": "en-US,en;q=0.9"
+            },
+            "required_headers": [
+                "referer"
+            ],
+            "required_payload": [
+                "Fuid",
+                "Shares",
+                "Term",
+                "Type"
+            ],
+            "payload_is_list": true
+        },
+        "games": {
+            "url": "https://www.marketwatch.com/games"
+        },
+        "priceStream": {
+            "url": "https://www.marketwatch.com/game/mw-api-test/miniquote?partial=true&chartingSymbol=STOCK%2FUS%2FXNAS%2FAAPL",
+            "query": {
+                "partial": true,
+                "chartingSymbol": "STOCK%2FUS%2FXNAS%2FAAPL"
+            }
+        }
+    },
+    "scrapingRequests": {
+        
+    }
+}
