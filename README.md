@@ -3,6 +3,8 @@
 ## Overview
 An ongoing Python API for Marketwatch games/simulations. 
 
+The current version may be deprecated.
+
 ## Quickstart
 This project requires Python3.
 
