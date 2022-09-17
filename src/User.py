@@ -3,6 +3,8 @@ import base64
 import re
 import json
 from bs4 import BeautifulSoup
+import websocket
+from time import time
 
 # My libraries
 from mw_requests.Request import Request
@@ -11,7 +13,7 @@ from mw_requests.Errors import *
 with open("mw_requests/requests.json", "r") as f:
     all_requests = json.load(f)["userRequests"]
 
-class MWUser:
+class User:
     def login_required(func):
         """
         Decorator function that checks for authentication
@@ -65,7 +67,7 @@ class MWUser:
         """
         # Create and send login page request
         csrf = Request(all_requests["csrf"])
-        login_page_text = csrf.send_session_request(self.session).text
+        login_page_text = csrf.send_request(self.session).text
 
         # Get login payload
         b64data = re.search("Base64.decode\('(.+?)'\)\)\)\);", login_page_text).group(1)
@@ -73,9 +75,10 @@ class MWUser:
         client_id = data["clientID"]
         data = data["internalOptions"]
         data["client_id"] = client_id
+        data["_csrf"] = self.session.cookies.get_dict()["_csrf"]
 
         # Create and send login request
-        wresult = Request(all_requests["login"], 
+        login = Request(all_requests["login"], 
             add_headers={
                 "x-remote-user": username
             },
@@ -87,39 +90,34 @@ class MWUser:
                     "headers": {"X-REMOTE-USER": username}
                 }
             }
-        ).send_session_request(self.session)
+        ).send_request(self.session)
 
-        # Get callback payload
-        page = BeautifulSoup(wresult.text, "html.parser")
-        inputs = page.find_all("input")
-        callback_payload = dict()
-        for i in inputs[:3]:
-            name = i["name"]
-            value = i["value"]
-            callback_payload[name] = value
+        # Get handler payload
+        page = BeautifulSoup(login.text, "html.parser")
+        handler_payload = {
+            "token": page.find("input", {"name": "token"}).get("value"),
+            "params": page.find("input", {"name": "params"}).get("value")
+        }
 
-        # Create and send callback request
-        callback_request = Request(all_requests["callback"],
-            add_payload=callback_payload)
-        callback_request.send_session_request(self.session)
+        # Create and send handler request
+        handler = Request(all_requests["handler"],
+            add_payload=handler_payload)
+        handler.send_request(self.session)
 
         return "djcs_session" in self.session.cookies.get_dict()
 
-    @default_game_required
-    @login_required
-    def transact(self, ticker, quantity):
+    def get_quote(self, ticker):
         """
-        Make transaction to default game
+        Get quote of stock
 
-        :param ticker: ticker to transact
-        :param quantity: quantity to transact
-        :returns: response from transaction request
+        :param ticker: ticker to retrieve fuid
+        :returns: fuid as string
         """
         # Search for ticker information
         search_request = Request(all_requests["search"], 
             add_headers={"referer": f"https://www.marketwatch.com/game/{self.default_game}"},
             add_query={"q": ticker}
-        ).send_session_request(self.session)
+        ).send_request(self.session)
         search_results = json.loads(search_request.text)["symbols"]
         top_result = [r for r in search_results if r["ticker"] == ticker.upper()]
 
@@ -135,25 +133,127 @@ class MWUser:
         quote_request = Request(all_requests["quoteByDialect"],
             add_headers = {"referer": f"https://www.marketwatch.com/game/{self.default_game}"},
             add_query = {"id": top_result[0]["chartingSymbol"]}
-        ).send_session_request(self.session)
-        fuid_link = json.loads(quote_request.text)["InstrumentResponses"][0]["Matches"][0]["Instrument"]["Debug"][3]
+        ).send_request(self.session).text
+        return json.loads(quote_request)
+
+    @default_game_required
+    @login_required
+    def get_realtime_stock_price(self, ticker, verbose=False):
+        """
+        Generator function, returns realtime stock price
+
+        :param ticker: ticker of stock
+        :yields: price as updated from MW
+        """
+        # Get websocket Connection Token
+        negotiate = Request(all_requests["negotiate"]).send_request(self.session).text
+        connection_token = json.loads(negotiate)["ConnectionToken"]
+
+        # Get all websocket channels from bg-quote elements
+        quote = self.get_quote(ticker)
+        charting_symbol = quote["InstrumentResponses"][0]["RequestId"]
+        miniquote = Request(
+            all_requests["miniquote"],
+            add_url_fields = { "game_name": self.games[self.default_game] },
+            add_query = { "chartingSymbol": charting_symbol }
+        ).send_request(self.session).text
+        miniquote_parse = BeautifulSoup(miniquote, "html.parser")
+        bg_quotes = [bg.get("channel") for bg in miniquote_parse.find_all("bg-quote")]
+        nonuq_channels = ",".join(bg_quotes).split(",") # Join comma-separated channels
+        channels = list(set(nonuq_channels)) # Clear duplicates
+
+        # Set up websocket
+        price_stream_url = all_requests["priceStream"]["url"].format(connection_token=connection_token)
+        if verbose:
+            print(f"Setting up WebSocket at url {price_stream_url}...")
+        ws = websocket.create_connection(price_stream_url)
+        if verbose:
+            print("WebSocket created successfully")
+        
+        # Queue of messages to send
+        send_queue = [{"H": "mainhub", "M": "ping", "A": [], "I": 0}] + [
+            {
+                "H": "mainhub",
+                "M": "subscribe",
+                "A": [channel,"","0"]
+            }
+            for channel in channels
+        ]
+
+        # Complete introduction
+        ws.recv()
+        ws.send(json.dumps(send_queue.pop(0)))
+        initial_time = time()
+
+        # Once "I" messages are received, we can start
+        i = 0
+        i_received = False
+        while True:
+            # Receive a message
+            try:
+                receive = json.loads(ws.recv())
+            except KeyboardInterrupt:
+                ws.close()
+                raise KeyboardInterrupt()
+            if verbose:
+                print(f"Received message: {receive}")
+
+            if receive.get("I"):
+                i = int(receive["I"])
+                i_received = True
+            else:
+                # YIELD RETURN DATA
+                yield receive
+
+            # If applicable, send return message
+            if i_received and len(send_queue) > 0:
+                i_received = False
+                message = send_queue.pop(0)
+                message["I"] = i + 1
+                if verbose:
+                    print(f"Sending {message}...")
+
+                ws.send(json.dumps(message))
+
+            # If applicable queue up a reping message
+            current_time = time()
+            if current_time - initial_time > 30:
+                send_queue.append({
+                    "H":"mainhub",
+                    "M":"ping",
+                    "A":[],
+                })
+                initial_time = current_time
+
+    @default_game_required
+    @login_required
+    def transact(self, ticker, quantity):
+        """
+        Make transaction to default game
+
+        :param ticker: ticker to transact
+        :param quantity: quantity to transact
+        :returns: response from transaction request
+        """
+        quote = self.get_quote(ticker)
+        fuid_link = quote["InstrumentResponses"][0]["Matches"][0]["Instrument"]["Debug"][3]
         fuid = fuid_link.split("fuid/")[1]
 
         # Make transaction
         tx_request = Request(all_requests["transaction"],
-            add_headers = {"referer": f"https://www.marketwatch.com/game/{self.default_game}"},
+            add_headers = {"referer": f"https://www.marketwatch.com/games/{self.games[self.default_game]}"},
             add_payload = {
                 "Fuid": fuid,
                 "Shares": str(quantity),
                 "Type": "Buy",
                 "Term": "Cancelled"
             }
-        ).send_session_request(self.session) # TODO Add term and type options
+        ).send_request(self.session) # TODO Add term and type options
         tx_result = json.loads(tx_request.text)
 
         # Raise error if transaction not successful
         if not tx_result["succeeded"]:
-            raise TransactionError(f"Transaction failed with message {tx_result['message']}")
+            raise TransactionError(f"Transaction failed with message '{tx_result['message']}'")
 
         return tx_request
 
@@ -164,13 +264,13 @@ class MWUser:
 
         :returns: list of names of all marketwatch games 
         """
-        gamepage = Request(all_requests["games"]).send_session_request(self.session).text
-        soup = BeautifulSoup(gamepage, "html.parser")
+        gamepage = Request(all_requests["games"]).send_request(self.session).text
+        gamepage_parse = BeautifulSoup(gamepage, "html.parser")
         game_elems = list()
 
-        for elem in soup.find_all("a"):
+        for elem in gamepage_parse.find_all("a"):
             try:
-                if elem["href"][27:33] == "/game/":
+                if elem["href"][27:34] == "/games/":
                     game_elems.append(elem)
             except KeyError:
                 pass
@@ -179,18 +279,6 @@ class MWUser:
         game_elems = game_elems[int(len(game_elems) / 2):]
         game_names = [tag.text for tag in game_elems] # Get names rather than tags
         return game_names
-
-    @default_game_required
-    @login_required
-    def get_realtime_stock_price(self):
-        """
-        Get stock price realtime via generator
-
-        :param stock: ticker of stock
-        :yields: price as updated from MW
-        """
-        ps_request = Request(all_requests["priceStream"]).send_session_request(self.session)
-        print(ps_request.content) # TODO figure this out
 
     def set_default_game(self, game):
         """
@@ -208,11 +296,4 @@ class MWUser:
         except ValueError:
             print(f"WARNING: Game {game} not found, setting to default {self.games[0]}")
             self.default_game = self.games[0]
-
-with open("login.json", "r") as f:
-    user = json.load(f)
-    username = user["username"]
-    password = user["password"]
-
-my_user = MWUser(username, password, default_game="mw-api-test")
-my_user.get_realtime_stock_price()
+            

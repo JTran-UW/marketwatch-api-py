@@ -3,19 +3,27 @@ from .Errors import FieldNotFoundError
 import json
 
 class Request():
-    def __init__(self, request, add_headers={}, add_payload={}, add_query={}):
+    def __init__(self, request, add_url_fields={}, add_headers={}, add_payload={}, add_query={}):
         """
         Request for Marketwatch automation
 
         :param request: request as json loaded dict
+        :param add_url_fields: required additional url fields
         :param add_headers: required additional headers
         :param add_payload: required additional payload
         :param add_query: required additional query params
         """
-        self.url = request["url"]
         self.method = request.get("method", "GET")
         self.form_encoded = request.get("form_encoded", False)
         self.payload_is_list = request.get("payload_is_list", False)
+
+        self.url_fields = self.add_fields(
+            request.get("url_fields", {}),
+            request.get("required_url_fields", []),
+            add_url_fields,
+            "URL Fields"
+        )
+        self.url = request["url"].format(**self.url_fields)
 
         self.headers = self.add_fields(
             request.get("headers", {}),

@@ -46,8 +46,8 @@
                 "headers"
             ]
         },
-        "callback": {
-            "url": "https://sso.accounts.dowjones.com/login/callback",
+        "handler": {
+            "url": "https://sso.accounts.dowjones.com/postauth/handler",
             "method": "POST",
             "headers": {
                 "authority": "sso.accounts.dowjones.com",
@@ -68,9 +68,8 @@
                 "accept-language": "en-US,en;q=0.9"
             },
             "required_payload": [
-                "wa",
-                "wresult",
-                "wctx"
+                "token",
+                "params"
             ],
             "form_encoded": true
         },
@@ -121,7 +120,7 @@
                 "Accept-Encoding": "gzip, deflate, br",
                 "Accept-Language": "en-US,en;q=0.9"
             },
-            "required_headres": ["referer"],
+            "required_headers": ["referer"],
             "query": {
                 "dialect": "charting",
                 "needed": "CompositeTrading|BluegrassChannels",
@@ -169,15 +168,18 @@
         "games": {
             "url": "https://www.marketwatch.com/games"
         },
+        "negotiate": {
+            "url": "https://mwstream.wsj.net/bg2/signalr/negotiate"
+        },
+        "miniquote": {
+            "url": "https://www.marketwatch.com/games/{game_name}/miniquote",
+            "required_url_fields": ["game_name"],
+            "query": { "partial": true },
+            "required_query": ["chartingSymbol"]
+        },
         "priceStream": {
-            "url": "https://www.marketwatch.com/game/mw-api-test/miniquote?partial=true&chartingSymbol=STOCK%2FUS%2FXNAS%2FAAPL",
-            "query": {
-                "partial": true,
-                "chartingSymbol": "STOCK%2FUS%2FXNAS%2FAAPL"
-            }
+            "type": "WebSocket",
+            "url": "wss://mwstream.wsj.net/BG2/signalr/connect?transport=webSockets&clientProtocol=1.5&connectionToken={connection_token}&connectionData=%5B%7B%22name%22%3A%22mainhub%22%7D%5D&tid=4"
         }
-    },
-    "scrapingRequests": {
-        
     }
 }
