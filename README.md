@@ -19,7 +19,7 @@ Install required libraries:
 Utilize the API
 
 ```
-from src.User import User
+from User import User
 
 username = "[YOUR USERNAME]"
 password = "[YOUR PASSWORD]"

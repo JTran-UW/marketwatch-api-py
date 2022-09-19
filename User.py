@@ -94,10 +94,13 @@ class User:
 
         # Get handler payload
         page = BeautifulSoup(login.text, "html.parser")
-        handler_payload = {
-            "token": page.find("input", {"name": "token"}).get("value"),
-            "params": page.find("input", {"name": "params"}).get("value")
-        }
+        try:
+            handler_payload = {
+                "token": page.find("input", {"name": "token"}).get("value"),
+                "params": page.find("input", {"name": "params"}).get("value")
+            }
+        except AttributeError:
+            raise UserNotFoundError("User not found with given username/password.")
 
         # Create and send handler request
         handler = Request(all_requests["handler"],
